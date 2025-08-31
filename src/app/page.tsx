@@ -1,9 +1,11 @@
-import Home from "@/pages/home";
+import dynamic from 'next/dynamic';
 
-export default function Page() {
+const Home = dynamic(
+  () => import('@/pages/home'),
+  { ssr: false }
+);
+export default function Page () {
   return (
-    <>
-      <Home></Home>
-    </>
+    <Home></Home>
   );
 }

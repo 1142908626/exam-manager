@@ -12,8 +12,12 @@
     "@ant-design/cssinjs": "^1.24.0",
     "@ant-design/icons": "5.x",
     "@ant-design/nextjs-registry": "^1.1.0",
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@faker-js/faker": "^9.9.0",
     "antd": "^5.26.7",
-    "next": "14.2.31",
+    "axios": "^1.11.0",
+    "date-fns": "^4.1.0",
+    "next": "^15.4.6",
     "react": "^18",
     "react-dom": "^18"
   },
