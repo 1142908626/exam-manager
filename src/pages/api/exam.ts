@@ -1,42 +1,24 @@
-import { ExamDataType, ExamStatusEnum } from '@/server-app/dto/exam.dto';
+import { ExamManagerDao } from '@/server-app/database';
+import { ExamDataType } from '@/server-app/dto/exam.dto';
 import { PaginationType } from '@/server-app/types/pagination.type';
-import { fakerZH_CN } from '@faker-js/faker';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 async function getExamList (): Promise<PaginationType<ExamDataType>> {
-  return {
-    size: 10,
-    page: 1,
-    count: 100,
-    data: [
-      {
-        id: 1,
-        name: fakerZH_CN.word.words(),
-        createTime: fakerZH_CN.date.anytime(),
-        onlineTime: fakerZH_CN.date.anytime(),
-        updateTime: fakerZH_CN.date.anytime(),
-        updateComment: fakerZH_CN.word.words(),
-        status: fakerZH_CN.helpers.enumValue(ExamStatusEnum),
-        showCourseIntro: fakerZH_CN.datatype.boolean(),
-        showLearningFile: fakerZH_CN.datatype.boolean(),
-        showExamInformation: fakerZH_CN.datatype.boolean(),
-        manager: fakerZH_CN.person.fullName()
-      },
-      {
-        id: 2,
-        name: fakerZH_CN.word.words(),
-        createTime: fakerZH_CN.date.anytime(),
-        onlineTime: fakerZH_CN.date.anytime(),
-        updateTime: fakerZH_CN.date.anytime(),
-        updateComment: fakerZH_CN.word.words(),
-        status: fakerZH_CN.helpers.enumValue(ExamStatusEnum),
-        showCourseIntro: fakerZH_CN.datatype.boolean(),
-        showLearningFile: fakerZH_CN.datatype.boolean(),
-        showExamInformation: fakerZH_CN.datatype.boolean(),
-        manager: fakerZH_CN.person.fullName()
-      }
-    ]
-  };
+  const examList = await (await ExamManagerDao()).exam.findAll({
+    limit: 10,
+    offset: 0
+  });
+  const data = examList.map(item => ({
+    ...item.dataValues,
+    createTime: new Date(item.createTime),
+    onlineTime: new Date(item.onlineTime),
+    updateTime: new Date(item.updateTime),
+    showCourseIntro: Boolean(item.showCourseIntro),
+    showLearningFile: Boolean(item.showLearningFile),
+    showExamInformation: Boolean(item.showExamInformation)
+  }));
+  console.log(data);
+  return data;
 }
 
 export type Res<T> = {
@@ -45,7 +27,18 @@ export type Res<T> = {
 }
 
 async function upsertExamList (data: ExamDataType): Promise<Res<{ message: string }>> {
-  console.log(data);
+  await (await (await ExamManagerDao()).exam.upsert({
+    id: data.id,
+    name: data.name,
+    createTime: new Date(),
+    onlineTime: new Date(),
+    updateTime: new Date(),
+    manager: '',
+    status: data.status,
+    showCourseIntro: data.showCourseIntro,
+    showLearningFile: data.showLearningFile,
+    showExamInformation: data.showExamInformation
+  }));
   return {
     statusCode: 200,
     json: {

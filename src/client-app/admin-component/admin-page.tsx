@@ -2,9 +2,16 @@
 import { menuOptionData, MenuTypeEnum } from '@/client-app/constants/menu.data';
 import { MenuOutlined } from '@ant-design/icons';
 import { Layout, Menu } from 'antd';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 export function AdminPage ({ children }: { children: ReactNode }) {
+  const [ routeKeys, setRouteKeys ] = useState([ MenuTypeEnum.EXAM_LIST ]);
+  useEffect(() => {
+    const url = window.location.pathname;
+    const curRouteKeys = url.split('/').filter(Boolean);
+    setRouteKeys(curRouteKeys);
+  }, []);
+
   return (
     <Layout>
       <Layout.Sider width={ '3rem' } className="flex justify-center items-center">
@@ -20,8 +27,12 @@ export function AdminPage ({ children }: { children: ReactNode }) {
           <Layout.Content>
             <Layout>
               <Layout.Sider theme="light" style={ { height: '100vh' } }>
-                <Menu defaultSelectedKeys={ MenuTypeEnum.EXAM_LIST }
-                      items={ menuOptionData }/>
+                <Menu selectedKeys={ routeKeys }
+                      items={ menuOptionData }
+                      onSelect={ ({ keyPath }: { keyPath: string[] }) => {
+                        window.location = keyPath.join('/');
+                      } }
+                />
               </Layout.Sider>
               <Layout.Content>
                 { children }

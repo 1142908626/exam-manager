@@ -1,5 +1,5 @@
 'use client';
-import { getExamRequest } from '@/client-app/actions/exam.action';
+import { getExamRequest, upsertExamRequest } from '@/client-app/actions/exam.action';
 import { AdminForm, FormItemType, FormOption } from '@/client-app/admin-component/admin-form';
 import { AdminModalForm, AdminModalFormProps } from '@/client-app/admin-component/admin-modal-form';
 import { AdminPage } from '@/client-app/admin-component/admin-page';
@@ -7,37 +7,49 @@ import { AdminTable, AdminTableDataTypeEnum, AdminTableProps } from '@/client-ap
 import { ExamDataType, ExamStatusEnum } from '@/server-app/dto/exam.dto';
 import { PaginationType } from '@/server-app/types/pagination.type';
 import { Button, Layout } from 'antd';
-import { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+
 
 /**
  * TODO 实现编辑保留id功能
  * @constructor
  */
+const initDialogStatus = {
+  title: '',
+  open: false,
+  formOption: {
+    data: [
+      { type: FormItemType.INPUT, label: '名字', name: 'name' },
+      {
+        type: FormItemType.SELECT, label: '状态', name: 'status', params: {
+          options: [
+            { label: ExamStatusEnum.DOWN, value: ExamStatusEnum.DOWN },
+            { label: ExamStatusEnum.ONLINE, value: ExamStatusEnum.ONLINE }
+          ]
+        }
+      },
+      { type: FormItemType.SWITCH, label: '考试页介绍', name: 'showCourseIntro' },
+      { type: FormItemType.SWITCH, label: '学习资料', name: 'showLearningFile' },
+      { type: FormItemType.SWITCH, label: '考试信息', name: 'showExamInformation' },
+    ]
+  }
+} as AdminModalFormProps;
+
+const initExamListOption = {
+  totalPage: 10,
+  page: 1,
+  size: 1,
+  count: 10,
+  data: []
+};
 export default function ExamList () {
 
-  const [ dialog, setDialog ] = useState<AdminModalFormProps>({
-    title: '',
-    open: false,
-    formOption: {
-      data: [
-        { type: FormItemType.INPUT, label: '名字', name: 'name' },
-        { type: FormItemType.SWITCH, label: '状态', name: 'status' },
-        { type: FormItemType.SWITCH, label: '考试页介绍', name: 'showCourseIntro' },
-        { type: FormItemType.SWITCH, label: '学习资料', name: 'showLearningFile' },
-        { type: FormItemType.SWITCH, label: '考试信息', name: 'showExamInformation' },
-      ]
-    }
-  });
+
+  const [ dialog, setDialog ] = useState<AdminModalFormProps>(initDialogStatus);
 
   const [ loadStatus, setLoadStatus ] = useState(false);
 
-  const [ examList, setExamList ] = useState<PaginationType<ExamDataType>>({
-    totalPage: 10,
-    page: 1,
-    size: 1,
-    count: 10,
-    data: []
-  });
+  const [ examListOption, setExamListOption ] = useState<PaginationType<ExamDataType>>(initExamListOption);
   const [ pagination, setPagination ] = useState(1);
 
   const [ searchParams, setSearchParams ] = useState<Partial<ExamDataType>>();
@@ -49,18 +61,34 @@ export default function ExamList () {
       open: true,
       title: `${ isAdd ? '新增' : '编辑' }考试`,
       formOption: {
-        ...dialog.formOption,
-        initialValues: examList.data.find(item => item.id === id)
+        ...initDialogStatus.formOption,
+        initialValues: examListOption.data.find(item => item.id === id)
       }
     });
   };
 
   useEffect(() => {
+    if (loadStatus) {
+      getExamRequest().then(data => setExamListOption({
+        ...initExamListOption,
+        data
+      })).finally(
+        () => setLoadStatus(false)
+      );
+    }
+
+  }, [ loadStatus, pagination, searchParams ]);
+
+  useEffect(() => {
     setLoadStatus(true);
-    getExamRequest().then(data => setExamList(data)).finally(
-      () => setLoadStatus(false)
-    );
-  }, [ pagination, searchParams ]);
+  }, []);
+
+  const handleOk = useCallback((data: ExamDataType) => {
+    upsertExamRequest({
+      ...dialog.formOption.initialValues,
+      ...data,
+    }).then(() => setLoadStatus(true)).finally(() => setDialog(initDialogStatus));
+  }, [ dialog.formOption.initialValues ]);
 
   const courseFormOptions = [
     { type: FormItemType.INPUT, label: '关键字', name: 'keyword', placeholder: '请输入' },
@@ -80,7 +108,8 @@ export default function ExamList () {
 
 
   const examTableOption: AdminTableProps<ExamDataType> = {
-    dataSource: examList.data,
+    total: 0,
+    dataSource: examListOption.data,
     columns: [
       { title: 'ID', dataIndex: 'id' },
       { title: '名称', dataIndex: 'name' },
@@ -146,20 +175,21 @@ export default function ExamList () {
   };
   return (
     <>
-      <AdminModalForm { ...dialog } onCancel={ () => setDialog({ ...dialog, open: false }) } onOk={ console.log }/>
+      <AdminModalForm { ...dialog } onCancel={ () => setDialog({ ...dialog, open: false }) } onOk={ handleOk }/>
       <AdminPage>
         <Layout>
           <div className="ml-4">
             <AdminForm layout="inline" data={ courseFormOptions } onFinish={ setSearchParams }
             />
           </div>
-          <AdminTable<ExamDataType> { ...examTableOption } loading={ loadStatus } rowKey="id" total={ examList.count }
+          <AdminTable<ExamDataType> { ...(examTableOption) } loading={ loadStatus } rowKey="id"
+                                    total={ examListOption.count }
                                     pagination={ {
                                       ...pagination,
-                                      total: examList.count,
+                                      total: examListOption.count,
                                       pageSize: 10,
                                       onChange: val => setPagination(val)
-                                    } }/>
+                                    } as never }/>
         </Layout>
       </AdminPage>
     </>

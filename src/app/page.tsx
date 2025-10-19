@@ -2,7 +2,7 @@ import dynamic from 'next/dynamic';
 
 const Home = dynamic(
   () => import('@/pages/home'),
-  { ssr: false }
+  { ssr: true }
 );
 export default function Page () {
   return (

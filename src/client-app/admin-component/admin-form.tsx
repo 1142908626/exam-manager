@@ -36,7 +36,7 @@ export type AdminFormProps = {
 
 export function AdminForm (props: AdminFormProps) {
   const data = props.data;
-  
+
   return (
     <Form { ...omit(props, 'data') }>
       { data.map(formItemOption => {

@@ -58,7 +58,7 @@ export function AdminTable<T extends object> (props: AdminTableProps<T>) {
         break;
       case AdminTableDataTypeEnum.ENUM:
         option.render = (val: string) => <span
-          style={ item.params[val].style || {} }>{ item.params[val].text || val }</span>;
+          style={ item.params[val]?.style || {} }>{ item.params[val]?.text || val }</span>;
         break;
 
     }
